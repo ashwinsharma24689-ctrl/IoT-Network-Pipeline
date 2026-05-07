@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.env
+.env
+
+# Logs & Data
+*.csv
+*.log
+*.txt.bak
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Arduino build artifacts
+*.elf
+*.bin
+*.hex
+build/
+
+# ngrok
+ngrok.exe
+ngrok
