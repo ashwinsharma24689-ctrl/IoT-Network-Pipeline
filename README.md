@@ -8,6 +8,15 @@ A networked environmental monitoring system built on the ESP32 microcontroller. 
 
 > Simulated on [Wokwi](https://wokwi.com) — ESP32 streams live sensor data to a Python server over TCP via ngrok tunnel.
 
+### Circuit Diagram
+![Circuit](assets/circuit.png)
+
+### OLED Display Output
+![OLED Display](assets/oled_display.png)
+
+### Python Base Station Output
+![Server Output](assets/server_output.png)
+
 ---
 
 ## 🧰 Hardware Components
@@ -60,13 +69,16 @@ A networked environmental monitoring system built on the ESP32 microcontroller. 
 ## 🗂️ Project Structure
 
 ```
-environment-quality-detection/
-├── sketch.ino               # ESP32 Arduino sketch
-├── python base station.py   # Python TCP server
-├── diagram.json             # Wokwi circuit diagram
-├── libraries.txt            # Wokwi library dependencies
+main/
+├── assets/
+│   ├── circuit.png        # screenshot of Wokwi circuit
+│   ├── oled_display.png   # photo/screenshot of OLED output
+│   └── server_output.png  # screenshot of Python terminal
+├── sketch.ino
+├── python base station.py
+├── diagram.json
+├── libraries.txt
 └── README.md
-```
 
 ---
 
