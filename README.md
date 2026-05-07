@@ -71,13 +71,15 @@ A networked environmental monitoring system built on the ESP32 microcontroller. 
 ```
 main/
 ├── assets/
-│   ├── circuit.png        # screenshot of Wokwi circuit
-│   ├── oled_display.png   # photo/screenshot of OLED output
-│   └── server_output.png  # screenshot of Python terminal
+│   ├── circuit.png
+│   ├── oled_display.png
+│   └── server_output.png
 ├── sketch.ino
 ├── python base station.py
 ├── diagram.json
 ├── libraries.txt
+├── .gitignore
+├── LICENSE
 └── README.md
 
 ---
