@@ -1,12 +1,14 @@
-# 🌿 Environment Quality Detection System
+# 🌿 IoT Network Pipeline — Environmental Monitoring System
 
-A networked environmental monitoring system built on the ESP32 microcontroller. Reads temperature, humidity, and air quality data from DHT22 and MQ2 sensors, displays live readings on an SH1107 OLED screen, and streams data over WiFi via TCP to a Python base station server that logs readings to CSV and triggers alerts for out-of-range values.
+A hands-on IoT networking project built on the **ESP32 microcontroller**. Reads real-time environmental data (temperature, humidity, air quality) from DHT22 and MQ2 sensors, displays live readings on an SH1107 OLED, and streams data over **WiFi via UDP** to a Python base station server — tunneled through **playit.gg** to the public internet.
+
+> Built as a step-by-step exploration of networking concepts — from raw UDP sockets to higher-level protocols.
 
 ---
 
 ## 📸 Demo
 
-> Simulated on [Wokwi](https://wokwi.com) — ESP32 streams live sensor data to a Python server over TCP via ngrok tunnel.
+> Simulated on [Wokwi](https://wokwi.com) — ESP32 streams live sensor data over UDP to a Python base station via playit.gg tunnel.
 
 ### Circuit Diagram
 ![Circuit](assets/circuit.png)
@@ -19,15 +21,72 @@ A networked environmental monitoring system built on the ESP32 microcontroller. 
 
 ---
 
+## 🏗️ System Architecture
+
+```
+┌─────────────────────────┐
+│     Wokwi ESP32         │
+│  DHT22 + MQ2 + OLED     │
+│   WiFiUDP Client        │
+└────────────┬────────────┘
+             │ UDP Packets (JSON)
+             │ WiFi → Internet
+             ▼
+┌─────────────────────────┐
+│     playit.gg Tunnel    │
+│  147.185.221.180:46069  │
+│   UDP Tunnel (free)     │
+└────────────┬────────────┘
+             │ forwards to localhost:5000
+             ▼
+┌─────────────────────────┐
+│  Python Base Station    │
+│  UDP Server :5000       │
+│  Logs CSV + Alerts      │
+└─────────────────────────┘
+```
+
+---
+
+## 🌐 Networking Concepts
+
+This project is **Level 1** of a planned multi-level networking exploration:
+
+| Level | Protocol | Status |
+|-------|----------|--------|
+| 1 | Raw UDP Sockets | ✅ Current |
+| 2 | Raw TCP Sockets | 🔜 Next |
+| 3 | HTTP REST API | 🔜 Planned |
+| 4 | MQTT (IoT Standard) | 🔜 Planned |
+| 5 | WebSocket + Dashboard | 🔜 Planned |
+
+### Level 1 — UDP Deep Dive
+
+| Concept | Detail |
+|---------|--------|
+| Protocol | UDP (User Datagram Protocol) |
+| Transport Layer | Layer 4 — OSI Model |
+| Connection | Connectionless — no handshake |
+| Reliability | No guaranteed delivery |
+| Speed | Faster than TCP |
+| Packet format | JSON string in UDP datagram |
+| Port | 5000 (local) → 46069 (public via tunnel) |
+| Tunneling | playit.gg UDP tunnel |
+
+**Why UDP for IoT?** Sensor data is time-sensitive. A slightly old reading is better than waiting for retransmission. UDP trades reliability for speed — perfect for continuous sensor streaming.
+
+---
+
 ## 🧰 Hardware Components
 
-| Component | Description |
-|-----------|-------------|
-| ESP32 DevKit C V4 | Main microcontroller |
-| DHT22 | Temperature & humidity sensor |
-| MQ2 Gas Sensor | Air quality / gas concentration sensor |
-| SH1107 OLED (128x128) | Display for live readings |
-| Buzzer | Audio alert for out-of-range values |
+| Component | Description | Pin |
+|-----------|-------------|-----|
+| ESP32 DevKit C V4 | Main microcontroller | — |
+| DHT22 | Temperature & humidity sensor | GPIO4 |
+| MQ2 Gas Sensor (AOUT) | Analog air quality | GPIO34 |
+| MQ2 Gas Sensor (DOUT) | Digital air quality alert | GPIO15 |
+| SH1107 OLED (128x128) | Live display | SDA:21, SCL:22 |
+| Buzzer | Audio alert | GPIO2 |
 
 ---
 
@@ -62,35 +121,37 @@ A networked environmental monitoring system built on the ESP32 microcontroller. 
 | + | GPIO2 |
 | - | GND |
 
-> ⚠️ **Important:** ESP32 GPIO pins are **3.3V tolerant only**. Use a voltage divider on MQ2's AOUT and DOUT pins since the sensor runs on 5V.
+> ⚠️ ESP32 GPIO pins are **3.3V tolerant only**. Use a voltage divider on MQ2 AOUT/DOUT since the sensor runs on 5V.
 
 ---
 
 ## 🗂️ Project Structure
 
 ```
-main/
+IoT-Network-Pipeline/
 ├── assets/
-│   ├── circuit.png
-│   ├── oled_display.png
-│   └── server_output.png
-├── sketch.ino
-├── python base station.py
-├── diagram.json
-├── libraries.txt
+│   ├── circuit.png          # Wokwi circuit screenshot
+│   ├── oled_display.png     # OLED output screenshot
+│   └── server_output.png    # Python terminal screenshot
+├── sketch.ino               # ESP32 Arduino sketch (UDP client)
+├── base_station.py          # Python UDP server
+├── diagram.json             # Wokwi circuit diagram
+├── libraries.txt            # Wokwi library dependencies
 ├── .gitignore
 ├── LICENSE
 └── README.md
+```
 
 ---
 
 ## 📦 Dependencies
 
-### Arduino Libraries (Wokwi / Arduino IDE)
-- `Wire`
-- `U8g2`
-- `DHT sensor library`
-- `WiFi` (built-in with ESP32)
+### Arduino Libraries
+- `Wire` — I2C communication
+- `U8g2` — OLED display driver
+- `DHT sensor library` — DHT22 sensor
+- `WiFi` — ESP32 built-in
+- `WiFiUdp` — ESP32 built-in
 
 ### Python
 - Python 3.x
@@ -102,75 +163,76 @@ main/
 
 ### 1. Wokwi Simulation
 
-1. Open [Wokwi](https://wokwi.com) and create a new **ESP32 Arduino** project
+1. Go to [wokwi.com](https://wokwi.com) → New Project → **ESP32 Arduino**
 2. Paste `sketch.ino` into the editor
 3. Replace `diagram.json` with the one from this repo
-4. Add libraries via the **Library Manager**:
-   - DHT sensor library
-   - U8g2
-   - Wire
-5. Update the server IP and port in `sketch.ino`:
+4. Add libraries via Library Manager: `DHT sensor library`, `U8g2`, `Wire`
+5. Update the server address in `sketch.ino`:
    ```cpp
-   const char* serverIP   = "YOUR_NGROK_HOST";
-   const int   serverPort = YOUR_NGROK_PORT;
+   const char* serverIP   = "147.185.221.180";
+   const int   serverPort = 46069;
    ```
 
-### 2. Python Base Station
+### 2. Set Up playit.gg Tunnel
+
+1. Download [playit.gg](https://playit.gg/download) for Windows
+2. Run `playit.exe`
+3. Claim your agent at the URL it provides
+4. Create a **UDP tunnel** → Local port: `5000`
+5. Note the public endpoint address
+
+### 3. Open Firewall Port
+
+Run in PowerShell as Administrator:
+```bash
+netsh advfirewall firewall add rule name="Wokwi UDP" dir=in action=allow protocol=UDP localport=5000
+```
+
+### 4. Start Python Base Station
 
 ```bash
-python "python base station.py"
+python base_station.py
 ```
 
-The server will start listening on port `5000`:
+Output:
 ```
-[Server] Listening on port 5000...
-```
-
-### 3. Expose Local Server via ngrok
-
-Since Wokwi runs in the cloud, use [ngrok](https://ngrok.com) to tunnel your local server:
-
-```bash
-ngrok tcp 5000
+[Server] UDP listening on port 5000...
 ```
 
-Copy the forwarding address (e.g. `0.tcp.ngrok.io:12345`) and update `sketch.ino` with the host and port.
+### 5. Run Wokwi Simulation
 
-### 4. Run
-
-1. Start the Python server first
-2. Start ngrok
-3. Update `sketch.ino` with the ngrok address
-4. Press ▶ Play in Wokwi
-5. Watch live data stream into your terminal
+Press ▶ Play — you should see:
+```
+[Data from ('x.x.x.x', xxxxx)] {'temp': 24.0, 'hum': 60.0, 'conc': 0.123, 'air': 1}
+```
 
 ---
 
 ## 📊 Data Logging
 
-Sensor readings are automatically saved to `sensor_log.csv`:
+Sensor readings saved to `sensor_log.csv`:
 
 ```
 timestamp,temp,hum,conc,air
-2026-05-07T04:30:00,24.0,60.0,0.123,1
-2026-05-07T04:30:03,24.1,59.8,0.120,1
-...
+2026-05-21T13:00:00,24.0,60.0,0.123,1
+2026-05-21T13:00:03,24.1,59.8,0.120,1
 ```
 
 ---
 
 ## 🚨 Alert Thresholds
 
-| Parameter | Low | High |
-|-----------|-----|------|
+| Parameter | Low Alert | High Alert |
+|-----------|-----------|------------|
 | Temperature | < 18°C | > 35°C |
 | Humidity | < 40% | > 70% |
-| Air Quality (DOUT) | — | `LOW` = Bad |
+| Concentration | — | > 2.5V |
+| Air Quality (DOUT) | — | LOW = Bad |
 
-When a threshold is breached:
-- 🔔 Buzzer activates on the ESP32
-- ⚠️ Alert printed in the Python server terminal
-- 📟 Warning message shown on OLED
+When breached:
+- 🔔 Buzzer activates on ESP32
+- ⚠️ Alert printed in Python terminal
+- 📟 Warning shown on OLED display
 
 ---
 
@@ -180,14 +242,14 @@ When a threshold is breached:
 - [U8g2 Library](https://github.com/olikraus/u8g2)
 - [DHT Sensor Library](https://github.com/adafruit/DHT-sensor-library)
 - [Wokwi Simulator](https://wokwi.com)
-- [ngrok](https://ngrok.com)
+- [playit.gg](https://playit.gg)
 
 ---
 
 ## 👤 Author
 
-**ash_0651**  
-[GitHub](https://github.com/ashwinsharma24689)
+**ashwinsharma24689-ctrl**
+[GitHub](https://github.com/ashwinsharma24689-ctrl)
 
 ---
 
