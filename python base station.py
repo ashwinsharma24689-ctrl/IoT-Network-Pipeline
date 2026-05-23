@@ -2,13 +2,13 @@
 import socket, json, csv, datetime, os
 
 HOST = "0.0.0.0"
-PORT = 5000
+PORT = 5000          # local port playit forwards to
 LOG_FILE = "sensor_log.csv"
 
 THRESHOLDS = {
     "temp":  (18, 35),
     "hum":   (40, 70),
-    "conc":  (0,  2.5),   # volts — adjust to your sensor
+    "conc":  (0,  2.5),
 }
 
 def check_alerts(data):
@@ -32,31 +32,19 @@ def log_to_csv(data):
         writer.writerow(data)
 
 def main():
-    print(f"[Server] Listening on port {PORT}...")
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    print(f"[Server] UDP listening on port {PORT}...")
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         s.bind((HOST, PORT))
-        s.listen(1)
-        conn, addr = s.accept()
-        print(f"[Server] ESP32 connected from {addr}")
-        with conn:
-            buffer = ""
-            while True:
-                chunk = conn.recv(1024).decode()
-                if not chunk:
-                    print("[Server] ESP32 disconnected")
-                    break
-                buffer += chunk
-                while "\n" in buffer:
-                    line, buffer = buffer.split("\n", 1)
-                    try:
-                        data = json.loads(line.strip())
-                        print(f"\n[Data] {data}")
-                        alerts = check_alerts(data)
-                        for a in alerts: print(a)
-                        log_to_csv(data)
-                    except json.JSONDecodeError:
-                        pass
+        while True:
+            data, addr = s.recvfrom(1024)
+            try:
+                packet = json.loads(data.decode())
+                print(f"\n[Data from {addr}] {packet}")
+                alerts = check_alerts(packet)
+                for a in alerts: print(a)
+                log_to_csv(packet)
+            except json.JSONDecodeError:
+                print(f"[Error] Bad packet: {data}")
 
 if __name__ == "__main__":
     main()
