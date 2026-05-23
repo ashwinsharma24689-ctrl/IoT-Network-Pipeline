@@ -1,4 +1,4 @@
-# 🌿 IoT Network Pipeline — Environmental Monitoring System
+# 🌿 IoT Network Pipeline : Environmental Monitoring System
 
 A hands-on IoT networking project built on the **ESP32 microcontroller**. Reads real-time environmental data (temperature, humidity, air quality) from DHT22 and MQ2 sensors, displays live readings on an SH1107 OLED, and streams data over **WiFi via UDP** to a Python base station server — tunneled through **playit.gg** to the public internet.
 
