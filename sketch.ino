@@ -2,22 +2,21 @@
 #include <U8g2lib.h>
 #include <DHT.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
 
 #define OLED_RESET -1
 #define DHTPIN     4
 #define DHTTYPE    DHT22
 
-// Wokwi's simulated WiFi credentials
 const char* ssid     = "Wokwi-GUEST";
 const char* password = "";
 
-// Your laptop's IP + port
-const char* serverIP   = "192.168.192.51";  // e.g. "192.168.1.10"
-const int   serverPort = 5000;
+const char* serverIP   = "147.185.221.180";
+const int   serverPort = 46069;
 
 U8G2_SH1107_128X128_1_HW_I2C display(U8G2_R0, OLED_RESET);
 DHT dht(DHTPIN, DHTTYPE);
-WiFiClient client;
+WiFiUDP udp;
 
 const int airpin  = 15;
 const int conc    = 34;
@@ -32,7 +31,6 @@ void setup() {
   pinMode(airpin,  INPUT);
   pinMode(buzzpin, OUTPUT);
 
-  // Connect to WiFi
   WiFi.begin(ssid, password);
   display.firstPage();
   do {
@@ -41,6 +39,8 @@ void setup() {
   } while (display.nextPage());
 
   while (WiFi.status() != WL_CONNECTED) delay(500);
+
+  udp.begin(4210);  // local UDP port on ESP32
 
   display.firstPage();
   do {
@@ -60,19 +60,19 @@ void loop() {
   float concentration = (3.3f / 4095.0f) * analogRead(conc);
   bool  buzzerNeeded  = false;
 
-  // --- Send to server ---
-  if (!client.connected()) {
-    client.connect(serverIP, serverPort);
-  }
-  if (client.connected()) {
-    String json = "{";
-    json += "\"temp\":"  + String(temperature, 2) + ",";
-    json += "\"hum\":"   + String(humidity, 2)    + ",";
-    json += "\"conc\":"  + String(concentration, 3) + ",";
-    json += "\"air\":"   + String(airquality);
-    json += "}\n";
-    client.print(json);
-  }
+  // --- Send UDP packet ---
+  String json = "{";
+  json += "\"temp\":"  + String(temperature, 2)   + ",";
+  json += "\"hum\":"   + String(humidity, 2)       + ",";
+  json += "\"conc\":"  + String(concentration, 3)  + ",";
+  json += "\"air\":"   + String(airquality);
+  json += "}";
+
+  udp.beginPacket(serverIP, serverPort);
+  udp.print(json);
+  udp.endPacket();
+
+  Serial.println("Sent: " + json);
 
   // --- Display ---
   display.firstPage();
@@ -95,7 +95,7 @@ void loop() {
     if (airquality == LOW) { buzzerNeeded = true; display.setCursor(0,80); display.print("Air BAD"); }
 
     display.setCursor(0, 100);
-    display.print(client.connected() ? "Server: OK" : "Server: --");
+    display.print("UDP Sending...");
 
   } while (display.nextPage());
 
